@@ -1,15 +1,36 @@
 import express from "express";
-import { generateArticle, generateBlogTitle, generateImage, generateImageBackGround, generateImageObject, resumeReview } from "../controllers/aiController.js";
-import {auth} from "../middleware/auth.js" 
+import {
+  generateArticle,
+  generateBlogTitle,
+  generateImage,
+  generateImageBackGround,
+  generateImageObject,
+  resumeReview,
+  // savePrompt,
+  // editPrompt,
+  deletePrompt,
+  // getUserPrompt,//
+  likePrompt,
+  editPrompt,
+  createPrompt,
+  
+  addComment,
+  getComments
+} from "../controllers/aiController.js";
+import { auth } from "../middleware/auth.js";
 import upload from "../config/multer.js";
 const aiRouter = express.Router();
-
 
 aiRouter.post("/generate-article", auth, generateArticle);
 aiRouter.post("/generate-blog-title", auth, generateBlogTitle);
 aiRouter.post("/generate-image", auth, generateImage);
 
-aiRouter.post("/generate-image-backgorund", auth,upload.single('image'), generateImageBackGround);
+aiRouter.post(
+  "/generate-image-backgorund",
+  auth,
+  upload.single("image"),
+  generateImageBackGround
+);
 aiRouter.post(
   "/generate-image-object",
   auth,
@@ -18,8 +39,20 @@ aiRouter.post(
 );
 
 aiRouter.post(
-  "/generate-resume-review",upload.single('resume'),
+  "/generate-resume-review",
+  upload.single("resume"),
   auth,
- resumeReview
+  resumeReview
 );
+aiRouter.post("/create-prompt", createPrompt);
+aiRouter.delete("/delete-prompt/:id", deletePrompt);
+aiRouter.post("/like-prompt", likePrompt);
+
+
+
+aiRouter.put("/edit-prompt/:id",auth,editPrompt);
+
+
+aiRouter.get("/get-comments/:id",auth, getComments);
+aiRouter.post("/add-Comment",auth ,addComment);
 export default aiRouter;

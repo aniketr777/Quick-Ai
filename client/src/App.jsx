@@ -11,16 +11,27 @@ import GenerateImage from "./pages/GenerateImage"
 import RemoveBg from "./pages/RemoveBg"
 import Community from "./pages/Community"
 import {Toaster} from "react-hot-toast"
-
+import PromptVault from "./pages/Promptvault";
+import {useAuth} from "@clerk/clerk-react";
+import { useEffect } from "react";
 function App() {
 
 
 
-  
+  // const { getToken } = useAuth();
+
+  // useEffect(() => {
+  //   const fetchToken = async () => {
+  //     const token = await getToken(); // wait for the promise
+  //     console.log("JWT:", token);
+  //   };
+
+  //   fetchToken();
+  // }, [getToken]);
 
   return (
     <div>
-      <Toaster/>
+      <Toaster />
       <Routes>
         <Route path="/" element={<Home />}></Route>
         <Route path="/ai" element={<Layout />}>
@@ -31,7 +42,8 @@ function App() {
           <Route path="remove-object" element={<RemoveObj />}></Route>
           <Route path="review-resume" element={<ReviewResume />}></Route>
           <Route path="generate-images" element={<GenerateImage />}></Route>
-          <Route path="community" element={<Community/>}></Route>
+          <Route path="promptvault" element={<PromptVault />}></Route>
+          <Route path="community" element={<Community />}></Route>
         </Route>
       </Routes>
     </div>

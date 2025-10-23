@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
-;
 import { Gem, Sparkles } from "lucide-react";
 import { Protect } from "@clerk/clerk-react";
 import CreationItem from "../components/CreationItem";
 import axios from "axios";
 import { toast } from "react-hot-toast";
-import {  useAuth } from "@clerk/clerk-react";
+import { useAuth } from "@clerk/clerk-react";
+
 function DashBoard() {
   const [creations, setCreations] = useState([]);
   axios.defaults.baseURL = import.meta.env.VITE_BASE_URL;
@@ -13,29 +13,33 @@ function DashBoard() {
   const [loading, setLoading] = useState(true);
 
   const getDashBoardData = async () => {
-    try{
-      const {data} = await axios.get('api/user/getUserCreations',{
-        headers:{
-          Authorization: `Bearer ${await getToken()}`
-        }
-      })
-      if(data.success){
-        setCreations(data.creations)
-      }else{
-        toast.error(data.message)
+    try {
+      const { data } = await axios.get("api/user/user-creations", {
+        headers: {
+          Authorization: `Bearer ${await getToken()}`,
+        },
+      });
+
+      if (data.success) {
+        setCreations(data.creations);
+      } else {
+        toast.error(data.message);
       }
-    }catch(e){
-      toast.error(e?.response?.data?.message || e.message)
-    }finally{
-      setLoading(false)
+    } catch (e) {
+      toast.error(e?.response?.data?.message || e.message);
+    } finally {
+      setLoading(false);
     }
-  }
-  useEffect(()=>{
+  };
+
+  useEffect(() => {
     getDashBoardData();
-  },[])
+  }, []);
+
   return (
-    <div className="h-full overflow-y-scroll p-6">
-      <div className="flex justify-start gap-4 flex-wrap">
+    <div className="h-full w-full p-6 flex flex-col fixed">
+      {/* Top Stats Cards */}
+      <div className="flex justify-start gap-4 flex-wrap mb-6">
         {/* Total Creations Card */}
         <div className="flex items-center gap-4 w-72 p-4 bg-white rounded-xl border border-gray-200">
           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#3588F2] to-[#0BB0D7] flex justify-center items-center">
@@ -63,19 +67,26 @@ function DashBoard() {
         </div>
       </div>
 
-      {loading ? (
-        <div className="space-y-3 ">
-          <p className="mt-6 mb-4">Recent Creations</p>
-          {creations.map((item) => (
-            <CreationItem key={item.id} item={item} />
-          ))}
-        </div>
-      ) : (
-        <div className="flex justify-center items-center h-full ">
-          <span className="w-10 h-10 my-1 rounded-full border-3 border-primary border-t-transparent animate-spin"></span>
-        </div>
-      )}
-      
+      {/* Scrollable Creations Section */}
+      <div className="flex-1  overflow-auto items-center justify-center w-full">
+        {loading ? (
+          // Spinner WHILE loading
+          <div className="flex justify-center items-center h-full">
+            <span className="w-10 h-10 my-1 rounded-full border-3 border-primary border-t-transparent animate-spin"></span>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="mb-4">Recent Creations</p>
+            {creations.length > 0 ? (
+              creations.map((item) => (
+                <CreationItem key={item.id} item={item} />
+              ))
+            ) : (
+              <p className="text-slate-500">No creations found yet.</p>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

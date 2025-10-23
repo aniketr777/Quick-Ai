@@ -12,14 +12,13 @@ function ReviewResume() {
   const [content, setContent] = useState("");
   const { getToken } = useAuth();
 
-  const onSubmitHandler = async(e) => {
+  const onSubmitHandler = async (e) => {
     e.preventDefault();
     if (!input) return alert("Please select a file!");
     console.log("Uploaded file:", input);
     // You can add upload logic here
-        try {
+    try {
       setLoading(true);
-
 
       const token = await getToken();
       const formData = new FormData();
@@ -87,30 +86,30 @@ function ReviewResume() {
       {/* Right Preview / Message */}
       <div className="w-full max-w-lg p-4 bg-white rounded-lg flex flex-col border border-gray-200 min-h-[24rem]">
         <div className="flex items-center gap-3">
-          <Edit className="w-5 h-5 text-[#00DA83]" />
-          <h1 className="text-xl font-semibold">Review Status</h1>
+          <FileText className="w-5 h-5 text-green-600" />
+          <h1 className="text-xl font-semibold text-green-700">
+            Processed Image
+          </h1>
         </div>
 
-
-        {
-          !content ? (
-        <div className="flex flex-col items-center justify-center ">
-          <div className="text-sm flex flex-col  items-center gap-5 text-gray-400">
-            <FileText className="w-9 h-9 ">
-              <p>Upload a resume and click "Review Resume" to get started"</p>
-            </FileText>
-          </div>
-          
-        </div>
-          ) : (
-            <div className="mt-3 h-full overflow-y-scroll text-sm text-slate-600">
-              <div className="reset-tw">
-                <ReactMarkdown>{content}</ReactMarkdown>
-              </div>
+        {!content ? (
+          <div className="flex flex-col items-center justify-center flex-grow">
+            <div className="text-sm flex flex-col items-center gap-5 text-gray-400 text-center">
+              <FileText className="w-9 h-9" />
+              <p>
+                Upload an image and describe the object to remove to get started
+              </p>
             </div>
-          )
-        }
-
+          </div>
+        ) : (
+          <div className="mt-3 h-full flex items-center justify-center overflow-y-scroll">
+            <img
+              src={URL.createObjectURL(image)}
+              alt="Processed"
+              className="max-h-full max-w-full rounded"
+            />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Image, Sparkles } from "lucide-react";
+import { Image, Sparkles, AlertTriangle } from "lucide-react";
 import { Protect } from "@clerk/clerk-react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
@@ -21,6 +21,7 @@ function GenerateImage() {
 
   const [loading, setLoading] = useState(false);
   const [content, setContent] = useState("");
+  const [warning, setWarning] = useState(""); // New warning state
   const { getToken } = useAuth();
 
   const [prompt, setPrompt] = useState("");
@@ -29,6 +30,7 @@ function GenerateImage() {
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
+    setWarning(""); // Reset warning
     try {
       setLoading(true);
       const token = await getToken();
@@ -51,7 +53,14 @@ function GenerateImage() {
         toast.error(data.message);
       }
     } catch (e) {
-      toast.error(e?.response?.data?.message || e.message);
+      // Show warning if API rejects prompt
+      if (e?.response?.status === 422) {
+        setWarning(
+          "⚠️ The prompt may contain inappropriate content. Please try a safe prompt."
+        );
+      } else {
+        toast.error(e?.response?.data?.message || e.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -164,8 +173,16 @@ function GenerateImage() {
           <h1 className="text-xl font-semibold">Generated Image</h1>
         </div>
 
+        {/* ⚠️ Warning Message */}
+        {warning && (
+          <div className="flex items-center gap-2 mt-3 text-orange-600 text-sm font-medium">
+            <AlertTriangle className="w-4 h-4" />
+            {warning}
+          </div>
+        )}
+
         {!content ? (
-          <div className="flex flex-col items-center justify-center flex-1 gap-5 text-gray-400 text-sm">
+          <div className="flex flex-col items-center justify-center flex-1 gap-5 text-gray-400 text-sm mt-3">
             <Image className="w-9 h-9" />
             <p>Enter a prompt, choose a style, and click "Generate Image"</p>
           </div>

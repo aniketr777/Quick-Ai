@@ -5,7 +5,9 @@
   font-family: "Outfit",sans-serif;
 }
 @theme{
-  --color-primary:#5044E5;
+  --color-primary:#F97A00;
+  --color-background:#000000;
+  --color-text:#FFFFFF;
 }
 
 .reset-tw,.reset-tw *{

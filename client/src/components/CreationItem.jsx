@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Markdown from "react-markdown" 
+import Markdown from "react-markdown";
 function CreationItem({ item }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -10,7 +10,7 @@ function CreationItem({ item }) {
     >
       <div className="flex justify-between items-center gap-4">
         <div>
-          <h2 className="font-medium">{item.prompt}</h2>
+          <h2 className="font-medium">{item.heading || item.title}</h2>
           <p className="text-gray-500">
             {item.type} - {new Date(item.created_at).toLocaleDateString()}
           </p>

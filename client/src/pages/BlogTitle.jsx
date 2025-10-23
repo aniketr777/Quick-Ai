@@ -4,7 +4,8 @@ import axios from "axios";
 import ReactMarkdown from "react-markdown";
 import { toast } from "react-hot-toast";
 import { useAuth } from "@clerk/clerk-react";
-
+import CopyButton from "../components/CopyButton";
+import HighlightedText from "../components/HighlightedText";
 function BlogTitle() {
   const blogCategories = [
     "General",
@@ -36,7 +37,15 @@ function BlogTitle() {
         return;
       }
 
-      const prompt = `Write a Blog Title for ${input} in the category ${selectedCategory}`;
+      const prompt = `
+      Write multiple creative Blog Title ideas for: ${input}
+      Category: ${selectedCategory}
+      Rules:
+      - Provide the answer in List format 
+      - Number each title (1,2,3,...)
+      - Group them under a heading like "Tech Ideas", "Creative Twist", etc.
+      - Keep formatting clear and markdown friendly
+      `;
       const { data } = await axios.post(
         "/api/ai/generate-blog-title",
         { prompt },
@@ -122,15 +131,20 @@ function BlogTitle() {
       <div className="w-full max-w-lg p-4 bg-white rounded-lg flex flex-col border border-gray-200 min-h-[24rem]">
         <div className="flex items-center gap-3">
           <Edit className="w-5 h-5 text-[#8E37EB]" />
-          <h1 className="text-xl font-semibold">Generated Title</h1>
+          <h1 className="text-xl font-semibold">Generated Titles</h1>
+          {content ? (
+            <div className="flex justify-end mb-1 ml-auto">
+              <CopyButton textToCopy={content} />
+            </div>
+          ) : null}
         </div>
 
         {loading ? (
           <div className="flex flex-col items-center justify-center flex-1 text-gray-400 text-sm">
-            <p>⏳ Generating your blog title...</p>
+            <p>⏳ Generating your blog titles...</p>
           </div>
         ) : content ? (
-          <div className="mt-4 text-slate-700 text-base font-medium prose">
+          <div className="mt-4 prose prose-slate text-base font-medium">
             <ReactMarkdown>{content}</ReactMarkdown>
           </div>
         ) : (

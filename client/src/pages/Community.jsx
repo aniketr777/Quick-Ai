@@ -1,8 +1,11 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useUser, useAuth } from "@clerk/clerk-react";
-import { Heart, Download } from "lucide-react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+
+import ImageCard from "../components/ImageCard";
+import PromptCard from "../components/PromptCard";
+import CommentModal from "../components/CommentModal";
 
 function Community() {
   const [creations, setCreations] = useState([]);
@@ -10,28 +13,32 @@ function Community() {
   const { getToken } = useAuth();
   const [loading, setLoading] = useState(true);
 
+  const [selectedCreation, setSelectedCreation] = useState(null);
+  const [comments, setComments] = useState({});
+  const [commentInput, setCommentInput] = useState({});
+
   axios.defaults.baseURL = import.meta.env.VITE_BASE_URL;
 
-  const fetchCreation = async () => {
+  const fetchCreations = async () => {
     try {
-      const { data } = await axios.get("/api/user/getPublishedCreations", {
+      const { data } = await axios.get("/api/user/published-creations", {
         headers: { Authorization: `Bearer ${await getToken()}` },
       });
 
       if (data.success) {
-        const formattedCreations = data.creations.map((c) => ({
-          ...c,
-          likes: Array.isArray(c.likes)
-            ? c.likes
-            : c.likes
-                ?.replace(/[{}]/g, "")
-                .split(",")
-                .map((s) => s.trim()) || [],
-        }));
+        const formattedCreations = data.creations.map((c) => {
+          let likesArray = [];
+          if (Array.isArray(c.likes)) {
+            likesArray = c.likes;
+          } else if (c.likes) {
+            const cleanedLikes = c.likes.replace(/[{}]/g, "").trim();
+            if (cleanedLikes)
+              likesArray = cleanedLikes.split(",").map((s) => s.trim());
+          }
+          return { ...c, likes: likesArray, comments: c.comments || [] };
+        });
         setCreations(formattedCreations);
-      } else {
-        toast.error(data.message);
-      }
+      } else toast.error(data.message);
     } catch (e) {
       toast.error(e?.response?.data?.message || e.message);
     } finally {
@@ -39,18 +46,15 @@ function Community() {
     }
   };
 
-  const imageLikeToggle = async (id) => {
-    // Optimistic UI update
+  const handleLikeToggle = async (id) => {
     setCreations((prev) =>
       prev.map((c) => {
         if (c.id === id) {
           const isLiked = c.likes.includes(user?.id);
-          return {
-            ...c,
-            likes: isLiked
-              ? c.likes.filter((uid) => uid !== user?.id)
-              : [...c.likes, user?.id],
-          };
+          const newLikes = isLiked
+            ? c.likes.filter((uid) => uid !== user?.id)
+            : [...c.likes, user?.id];
+          return { ...c, likes: newLikes };
         }
         return c;
       })
@@ -58,78 +62,124 @@ function Community() {
 
     try {
       const { data } = await axios.post(
-        "/api/user/toggle-like-creation",
+        "/api/user/toggle-like",
         { id },
         { headers: { Authorization: `Bearer ${await getToken()}` } }
       );
-
       if (!data.success) {
         toast.error(data.message);
-        await fetchCreation(); // revert if server fails
+        await fetchCreations();
       }
     } catch (e) {
       toast.error(e?.response?.data?.message || e.message);
-      await fetchCreation(); // revert on error
+      await fetchCreations();
     }
   };
 
+  const fetchComments = async (creationId) => {
+    try {
+      const token = await getToken();
+      const { data } = await axios.get(`/api/ai/get-comments/${creationId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (data.success)
+        setComments((prev) => ({ ...prev, [creationId]: data.comments }));
+    } catch (e) {
+      console.error("Error fetching comments:", e);
+    }
+  };
 
+  const addComment = async (creationId) => {
+    if (!commentInput[creationId]) return;
+    try {
+      const token = await getToken();
+      const { data } = await axios.post(
+        "/api/ai/add-Comment",
+        { promptId: creationId, text: commentInput[creationId] },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (data.success) {
+        setCommentInput((prev) => ({ ...prev, [creationId]: "" }));
+        fetchComments(creationId);
+      }
+    } catch (e) {
+      console.error("Error adding comment:", e);
+    }
+  };
 
   useEffect(() => {
-    if (user) fetchCreation();
+    if (user) fetchCreations();
   }, [user]);
 
   const handleDownload = (imageUrl) => {
     const link = document.createElement("a");
     link.href = imageUrl;
     link.download = `creation-${Date.now()}.jpg`;
+    document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
   };
 
-  return !loading ? (
+  const handleCardClick = async (creation) => {
+    setSelectedCreation(creation);
+    await fetchComments(creation.id);
+  };
 
-    <div className="flex-1 h-full flex flex-col gap-4 p-6">
-      <h2 className="text-xl font-semibold">Creations</h2>
-      <div className="bg-white h-full w-full rounded-xl overflow-y-scroll grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-3">
-        {creations.map((creation, index) => (
-          <div
-            key={index}
-            className="relative group w-full rounded-lg overflow-hidden"
-          >
-            <img
-              className="w-full h-60 object-cover rounded-lg"
-              src={creation.content}
-              alt="Creation"
-            />
-            <div className="absolute top-0 left-0 p-3 bg-black/50 text-white font-semibold">
-              {creation.user_id || "Anonymous"}
-            </div>
-            <div className="absolute inset-0 flex items-end justify-between p-3 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition">
-              <div className="flex items-center gap-2">
-                <p className="text-white text-sm">{creation.likes.length}</p>
-                <Heart
-                  onClick={() => imageLikeToggle(creation.id)}
-                  className={`w-5 h-5 cursor-pointer hover:scale-110 transition ${
-                    creation.likes.includes(user?.id)
-                      ? "fill-red-500 text-red-600"
-                      : "text-white"
-                  }`}
-                />
-              </div>
-              <Download
-                className="w-5 h-5 text-white cursor-pointer hover:scale-110 transition"
-                onClick={() => handleDownload(creation.content)}
-              />
-            </div>
-          </div>
-        ))}
+  const handleCloseModal = () => {
+    setSelectedCreation(null);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <span className="w-10 h-10 rounded-full border-4 border-blue-500 border-t-transparent animate-spin"></span>
       </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 h-full flex flex-col gap-4 p-6 bg-gray-50">
+      <h2 className="text-2xl font-bold text-gray-800">Community Creations</h2>
+      <div className="flex-1 w-full overflow-auto overflow-y-hidden grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 p-1">
+        {creations.map((creation) =>
+          creation.type === "prompt" ? (
+            <PromptCard
+              key={creation.id}
+              creation={creation}
+              onLikeToggle={handleLikeToggle}
+              onCardClick={handleCardClick}
+            />
+          ) : (
+            <ImageCard
+              key={creation.id}
+              creation={creation}
+              onLikeToggle={handleLikeToggle}
+              onDownload={handleDownload}
+              onCardClick={handleCardClick}
+            />
+          )
+        )}
+      </div>
+
+      {/* Comment Modal */}
+      {selectedCreation && (
+        <CommentModal
+          isOpen={!!selectedCreation}
+          onClose={handleCloseModal}
+          creation={selectedCreation}
+          comments={comments[selectedCreation.id] || []}
+          commentInput={commentInput[selectedCreation.id] || ""}
+          setCommentInput={(text) =>
+            setCommentInput((prev) => ({
+              ...prev,
+              [selectedCreation.id]: text,
+            }))
+          }
+          addComment={() => addComment(selectedCreation.id)}
+        />
+      )}
     </div>
-  ) :(
-    <div className="flex justify-center items-center h-full ">
-      <span className="w-10 h-10 my-1 rounded-full border-3 border-primary border-t-transparent animate-spin"></span>
-    </div>
-  ) ;
+  );
 }
 
 export default Community;

@@ -1,13 +1,21 @@
 import express from "express";
+import { auth } from "../middleware/auth.js";
+import {
+  getUserCreations,
+  getPublishedCreations,
+  toggleLikeCreation,
+  getUserPrompts
+} from "../controllers/userController.js";
 
-
-import {auth} from "../middleware/auth.js" 
-import {getUserCreations , getPublishedCreations, toggleLikeCreation} from "../controllers/userCreations.js"
 const userRouter = express.Router();
 
-userRouter.get("/getUserCreations",auth,getUserCreations)
-userRouter.get("/getPublishedCreations", auth, getPublishedCreations);
+userRouter.get("/user-creations", auth, getUserCreations);
 
-userRouter.post("/toggle-like-creation", auth, toggleLikeCreation);
 
-export default userRouter
+userRouter.get("/published-creations", getPublishedCreations);
+
+userRouter.post("/toggle-like", auth, toggleLikeCreation);
+
+
+userRouter.get("/get-user-prompts",auth, getUserPrompts);
+export default userRouter;
