@@ -6,7 +6,7 @@ import { clerkMiddleware } from "@clerk/express";
 import aiRouter from "./routes/aiRoutes.js";
 import userRouter from "./routes/userRoutes.js";
 import connectCloudinary from "./config/cloudinary.js";
-import { handleClerkWebhook } from "./controllers/webhookController.js";
+import { handleClerkWebhook } from "./controllers/webHookController.js";
 
 
 const app = express();
