@@ -4,9 +4,7 @@ import { sql } from "../config/db.js";
 export const getUserCreations = async (req, res) => {
   try {
     const { userId } = await req.auth();
-    // console.log(userId)
     const user_id = userId.toString();
-    // console.log(user_id)
     const creations =
       await sql`SELECT * FROM creations WHERE user_id = ${user_id} ORDER BY created_at DESC`;
     res.json({ success: true, creations });
@@ -19,10 +17,9 @@ export const getUserCreations = async (req, res) => {
 // 2️⃣ Get all published creations
 export const getPublishedCreations = async (req, res) => {
   try {
-    // req.auth() is used here to ensure the user is authenticated to see community creations
     const userId = await req.auth();
     const creations =
-      await sql`SELECT * FROM creations WHERE publish = true or is_public=true ORDER BY created_at DESC`;
+      await sql`SELECT *, COALESCE(likes, '{}') as likes, COALESCE(comments, '{}') as comments FROM creations WHERE publish = true or is_public=true ORDER BY created_at DESC`;
     res.json({ success: true, creations });
   } catch (e) {
     console.error("❌ Error in getPublishedCreations:", e);
@@ -30,22 +27,28 @@ export const getPublishedCreations = async (req, res) => {
   }
 };
 
-// 3️⃣ Toggle like on a creation
 export const toggleLikeCreation = async (req, res) => {
   try {
+    console.log("🔍 toggleLikeCreation - Request body:", req.body);
     const { userId } = await req.auth();
+    console.log("🔍 toggleLikeCreation - User ID:", userId);
     const { id } = req.body;
 
+    if (!id) {
+      console.error("❌ toggleLikeCreation - No ID provided in request body");
+      return res.status(400).json({ success: false, message: "Creation ID is required" });
+    }
+
+    console.log("🔍 toggleLikeCreation - Creation ID:", id);
     const [creation] = await sql`SELECT likes FROM creations WHERE id = ${id}`;
 
     if (!creation) {
+      console.error("❌ toggleLikeCreation - Creation not found for ID:", id);
       return res
         .status(404)
         .json({ success: false, message: "Creation not found" });
     }
 
-    // The database driver automatically converts TEXT[] to a JS array.
-    // If 'likes' is null, default to an empty array.
     const currentLikes = creation.likes || [];
     const userIdStr = userId.toString();
     let updatedLikes;
@@ -55,14 +58,15 @@ export const toggleLikeCreation = async (req, res) => {
       // User has already liked, so remove the like
       updatedLikes = currentLikes.filter((uid) => uid !== userIdStr);
       message = "Like removed";
+      console.log("👎 toggleLikeCreation - Removing like for user:", userIdStr);
     } else {
       // User has not liked, so add the like
       updatedLikes = [...currentLikes, userIdStr];
       message = "Creation liked";
+      console.log("👍 toggleLikeCreation - Adding like for user:", userIdStr);
     }
-
-    // The `sql` helper automatically converts the JS array to the correct PostgreSQL format
     await sql`UPDATE creations SET likes = ${updatedLikes} WHERE id = ${id}`;
+    console.log("✅ toggleLikeCreation - Success:", message, "Total likes:", updatedLikes.length);
 
     res.json({ success: true, message, likes: updatedLikes });
   } catch (e) {
@@ -72,8 +76,7 @@ export const toggleLikeCreation = async (req, res) => {
 };
 
 
-
-export const getUserPrompts =async(req,res) =>{
+export const getUserPrompts = async(req,res) => {
   try {
     const { userId } = await req.auth();
     const user_id = userId.toString();
@@ -81,7 +84,7 @@ export const getUserPrompts =async(req,res) =>{
       await sql`SELECT * FROM creations WHERE user_id = ${user_id} AND type = 'prompt' ORDER BY created_at DESC;`;
     res.json({ success: true, creations });
   } catch (e) {
-    console.error("❌ Error in getUserCreations:", e);
+    console.error("❌ Error in getUserPrompts:", e);
     res.status(500).json({ success: false, message: e.message });
   }
 }

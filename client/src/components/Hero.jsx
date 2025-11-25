@@ -5,7 +5,7 @@ function Hero() {
   const navigate = useNavigate();
 
   return (
-    
+
     <div className="px-4 sm:px-20 xl:px-32 relative inline-flex flex-col w-full justify-center bg-[url('/grid.jpg')] bg-cover bg-no-repeat min-h-screen">
       <div className="text-center mb-6">
         <h1 className="text-3xl sm:text-5xl md:text-6xl 2xl:text-7xl font-semibold mx-auto leading-[1.2]">
@@ -28,7 +28,7 @@ function Hero() {
         >
           Start creating now
         </button>
-        <button className="bg-white px-10 py-3 rounded-lg border border-gray-300 hover:scale-105 active:scale-95 transition cursor-pointer">
+        <button className="bg-white text-gray-900 px-10 py-3 rounded-lg border border-gray-300 hover:scale-105 active:scale-95 transition cursor-pointer">
           Watch demo
         </button>
       </div>

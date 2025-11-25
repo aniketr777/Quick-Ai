@@ -4,8 +4,6 @@ import {
   Eraser,
   House,
   Scissors,
-  SquarePen,
-  Hash,
   Image,
   FileText,
   Users,
@@ -16,8 +14,6 @@ import { NavLink } from "react-router-dom";
 const navItems = [
   { to: "/ai", label: "Dashboard", Icon: House },
   { to: "/ai/promptvault", label: "PromptVault", Icon: MessageSquareText },
-  // { to: "/ai/write-article", label: "Write Article", Icon: SquarePen },
-  // { to: "/ai/blog-titles", label: "Blog Titles", Icon: Hash },
   { to: "/ai/generate-images", label: "Generate Images", Icon: Image },
   { to: "/ai/remove-background", label: "Remove Background", Icon: Eraser },
   { to: "/ai/remove-object", label: "Remove Object", Icon: Scissors },
@@ -31,10 +27,15 @@ function SideBar({ sideBar, setSideBar }) {
 
   return (
     <div
-      className={`w-60 h-[89vh] overflow-hidden bg-white border-r border-gray-200 flex flex-col justify-between
-        transition-transform duration-300 ease-in-out
+      className={`w-60 h-[89vh] overflow-hidden flex flex-col justify-between
+        transition-all duration-300 ease-in-out
         max-sm:fixed max-sm:top-14 max-sm:bottom-0 max-sm:left-0 max-sm:z-50
         ${sideBar ? "translate-x-0" : "max-sm:-translate-x-full"}`}
+      style={{
+        backgroundColor: 'var(--bg-card)',
+        borderRight: '1px solid var(--border-primary)',
+        color: 'var(--text-primary)'
+      }}
     >
       {/* Top: User + Nav */}
       <div className="my-7 w-full">
@@ -43,28 +44,43 @@ function SideBar({ sideBar, setSideBar }) {
             <img
               src={user.imageUrl}
               alt="User"
-              className="w-14 h-14 rounded-full mx-auto object-cover"
+              className="w-14 h-14 rounded-full mx-auto object-cover ring-2 ring-offset-2 transition-smooth"
+              style={{
+                ringColor: 'var(--accent-primary)',
+                ringOffsetColor: 'var(--bg-card)'
+              }}
             />
-            <h1 className="mt-1 text-center font-medium">{user.fullName}</h1>
+            <h1 className="mt-2 text-center font-semibold" style={{ color: 'var(--text-primary)' }}>
+              {user.fullName}
+            </h1>
 
-            <div className="px-6 mt-5 text-sm text-gray-600 font-medium">
-              {navItems.map(({ to, label,Icon}) => (
+            <div className="px-6 mt-6 text-sm font-medium">
+              {navItems.map(({ to, label, Icon }) => (
                 <NavLink
                   key={to}
                   to={to}
                   end={to === "/ai"}
                   onClick={() => setSideBar(false)}
                   className={({ isActive }) =>
-                    `px-3.5 py-2.5 flex items-center gap-3 rounded transition
-                    ${
-                      isActive
-                        ? "bg-gradient-to-r from-[#febf52] to-[#ffa200] text-white"
-                        : "hover:bg-gray-100"
+                    `px-3.5 py-2.5 mb-1 flex items-center gap-3 rounded-lg transition-smooth hover-lift
+                    ${isActive
+                      ? "gradient-primary text-white shadow-md"
+                      : ""
                     }`
                   }
+                  style={({ isActive }) =>
+                    !isActive ? {
+                      color: 'var(--text-secondary)',
+                      backgroundColor: 'transparent'
+                    } : {}
+                  }
                 >
-                  <Icon className="w-4 h-4" />
-                  {label}
+                  {({ isActive }) => (
+                    <>
+                      <Icon className="w-4 h-4" />
+                      {label}
+                    </>
+                  )}
                 </NavLink>
               ))}
             </div>
@@ -75,9 +91,12 @@ function SideBar({ sideBar, setSideBar }) {
       {/* Bottom: Profile + Logout */}
       <div className="">
         {user && (
-          <div className="w-full flex items-center justify-center border-t border-gray-200 p-4 px-7">
+          <div
+            className="w-full flex items-center justify-center p-4 px-7 transition-smooth"
+            style={{ borderTop: '1px solid var(--border-primary)' }}
+          >
             <div
-              className="flex gap-3 items-center cursor-pointer group"
+              className="flex gap-3 items-center cursor-pointer group w-full"
               onClick={openUserProfile}
             >
               <img
@@ -86,20 +105,25 @@ function SideBar({ sideBar, setSideBar }) {
                 alt="User avatar"
               />
               <div className="flex-1">
-                <h1 className="text-sm font-medium">{user.fullName}</h1>
-                <p className="text-xs text-gray-500">
+                <h1 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                  {user.fullName}
+                </h1>
+                <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
                   <Protect plan="premium" fallback="Free">
                     Premium
-                  </Protect>{" "}
+                  </Protect>
                   Plan
                 </p>
               </div>
               <LogOut
                 onClick={(e) => {
-                  e.stopPropagation(); // prevent opening profile
+                  e.stopPropagation();
                   signOut();
                 }}
-                className="w-5 text-gray-400 hover:text-red-500 transition cursor-pointer"
+                className="w-5 transition-smooth cursor-pointer"
+                style={{ color: 'var(--text-tertiary)' }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--error)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-tertiary)'}
               />
             </div>
           </div>
@@ -110,3 +134,4 @@ function SideBar({ sideBar, setSideBar }) {
 }
 
 export default SideBar;
+

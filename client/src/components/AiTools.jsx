@@ -18,11 +18,11 @@ function AiTools() {
       </div>
 
       {/* Tools List */}
-      <div className="flex flex-wrap mt-10 justify-center">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-10">
         {AiToolsData.map((tool, index) => (
           <div
             key={index}
-            className="p-8 m-4 max-w-xs rounded-lg bg-[#FDFDFE] shadow-lg border border-gray-100 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+            className="p-6 sm:p-8 rounded-lg bg-[#FDFDFE] shadow-lg border border-gray-100 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
             onClick={() => {
               if (user) navigate(tool.path);
             }}
@@ -33,8 +33,8 @@ function AiTools() {
                 background: `linear-gradient(to bottom, ${tool.bg.from}, ${tool.bg.to})`,
               }}
             />
-            <h3 className="mt-6 mb-3 text-lg font-semibold">{tool.title}</h3>
-            <p className="text-gray-400 text-sm max-w-[95%]">
+            <h3 className="mt-6 mb-3 text-lg font-semibold text-gray-900">{tool.title}</h3>
+            <p className="text-gray-600 text-sm">
               {tool.description}
             </p>
           </div>

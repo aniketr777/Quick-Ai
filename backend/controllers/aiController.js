@@ -26,91 +26,91 @@ const getUserDetails = async (userId) => {
   }
 };
 
-export const generateArticle = async (req, res) => {
-  try {
-    const { userId } = req.auth();
-    const { prompt, length } = req.body;
-    const plan = req.plan;
-    const free_usage = req.free_usage;
+// export const generateArticle = async (req, res) => {
+//   try {
+//     const { userId } = req.auth();
+//     const { prompt, length } = req.body;
+//     const plan = req.plan;
+//     const free_usage = req.free_usage;
 
-    if (plan !== "premium" && free_usage >= 10) {
-      return res.json({
-        success: false,
-        message: "Limit reached. Upgrade to continue",
-      });
-    }
+//     if (plan !== "premium" && free_usage >= 10) {
+//       return res.json({
+//         success: false,
+//         message: "Limit reached. Upgrade to continue",
+//       });
+//     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: length, temperature: 0.7 },
-    });
-    const content = result.response.text();
+//     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+//     const result = await model.generateContent({
+//       contents: [{ role: "user", parts: [{ text: prompt }] }],
+//       generationConfig: { maxOutputTokens: length, temperature: 0.7 },
+//     });
+//     const content = result.response.text();
 
-    // MODIFIED: Fetch user details
-    const { username, user_img } = await getUserDetails(userId);
+//     // MODIFIED: Fetch user details
+//     const { username, user_img } = await getUserDetails(userId);
 
-    // MODIFIED: Insert new user details into DB
-    await sql`
-      INSERT INTO creations (user_id, prompt, content, type, username, user_img)
-      VALUES (${userId}, ${prompt}, ${content}, 'article', ${username}, ${user_img})
-    `;
+//     // MODIFIED: Insert new user details into DB
+//     await sql`
+//       INSERT INTO creations (user_id, prompt, content, type, username, user_img)
+//       VALUES (${userId}, ${prompt}, ${content}, 'article', ${username}, ${user_img})
+//     `;
 
-    if (plan !== "premium") {
-      await clerkClient.users.updateUser(userId, {
-        privateMetadata: { free_usage: free_usage + 1 },
-      });
-    }
+//     if (plan !== "premium") {
+//       await clerkClient.users.updateUser(userId, {
+//         privateMetadata: { free_usage: free_usage + 1 },
+//       });
+//     }
 
-    res.json({ success: true, content });
-  } catch (e) {
-    console.error("❌ Error in generateArticle:", e);
-    res.json({ success: false, message: "failure in creating" });
-  }
-};
+//     res.json({ success: true, content });
+//   } catch (e) {
+//     console.error("❌ Error in generateArticle:", e);
+//     res.json({ success: false, message: "failure in creating" });
+//   }
+// };
 
-export const generateBlogTitle = async (req, res) => {
-  try {
-    const { userId } = await req.auth();
-    const { prompt } = req.body;
-    const plan = req.plan;
-    const free_usage = req.free_usage;
+// export const generateBlogTitle = async (req, res) => {
+//   try {
+//     const { userId } = await req.auth();
+//     const { prompt } = req.body;
+//     const plan = req.plan;
+//     const free_usage = req.free_usage;
 
-    if (plan !== "premium" && free_usage >= 10) {
-      return res.json({
-        success: false,
-        message: "Limit reached. Upgrade to continue",
-      });
-    }
+//     if (plan !== "premium" && free_usage >= 10) {
+//       return res.json({
+//         success: false,
+//         message: "Limit reached. Upgrade to continue",
+//       });
+//     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.7 },
-    });
-    const content = result.response.text();
+//     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+//     const result = await model.generateContent({
+//       contents: [{ role: "user", parts: [{ text: prompt }] }],
+//       generationConfig: { temperature: 0.7 },
+//     });
+//     const content = result.response.text();
 
-    // MODIFIED: Fetch user details
-    const { username, user_img } = await getUserDetails(userId);
+//     // MODIFIED: Fetch user details
+//     const { username, user_img } = await getUserDetails(userId);
 
-    // MODIFIED: Insert new user details into DB
-    await sql`
-      INSERT INTO creations (user_id, prompt, content, type, username, user_img)
-      VALUES (${userId}, ${prompt}, ${content}, 'blogTitle', ${username}, ${user_img})
-    `;
+//     // MODIFIED: Insert new user details into DB
+//     await sql`
+//       INSERT INTO creations (user_id, prompt, content, type, username, user_img)
+//       VALUES (${userId}, ${prompt}, ${content}, 'blogTitle', ${username}, ${user_img})
+//     `;
 
-    if (plan !== "premium") {
-      await clerkClient.users.updateUser(userId, {
-        privateMetadata: { free_usage: free_usage + 1 },
-      });
-    }
+//     if (plan !== "premium") {
+//       await clerkClient.users.updateUser(userId, {
+//         privateMetadata: { free_usage: free_usage + 1 },
+//       });
+//     }
 
-    res.json({ success: true, content });
-  } catch (e) {
-    console.error("❌ Error in generateBlogTitle:", e);
-    res.json({ success: false, message: "failure in creating" });
-  }
-};
+//     res.json({ success: true, content });
+//   } catch (e) {
+//     console.error("❌ Error in generateBlogTitle:", e);
+//     res.json({ success: false, message: "failure in creating" });
+//   }
+// };
 
 export const generateImage = async (req, res) => {
   try {
@@ -255,55 +255,87 @@ export const generateImageObject = async (req, res) => {
   }
 };
 
+
 export const resumeReview = async (req, res) => {
   try {
-    const { userId } = await req.auth();
+    // 1. Check Auth & File
+    const { userId } = req.auth();
     const resume = req.file;
+
     if (!resume) {
-      return res
-        .status(400)
-        .json({ success: false, message: "No resume file uploaded" });
-    }
-    const plan = req.plan || "free";
-    if (plan !== "premium") {
-      return res.json({
-        success: false,
-        message: "This feature is available for premium members only",
-      });
-    }
-    if (resume.size > 5 * 1024 * 1024) {
-      return res.json({
-        success: false,
-        message: "Resume file size exceeds allowed size (5MB)",
-      });
+      return res.status(400).json({ success: false, message: "No resume file uploaded" });
     }
 
+    // 2. Validate File Size (5MB)
+    if (resume.size > 5 * 1024 * 1024) {
+      // Clean up file if too big
+      fs.unlinkSync(resume.path); 
+      return res.status(400).json({ success: false, message: "File size exceeds 5MB limit" });
+    }
+
+    // 3. Extract Text from PDF
     const dataBuffer = fs.readFileSync(resume.path);
     const pdfData = await pdf(dataBuffer);
-    const prompt = `Review the following resume and provide constructive feedback on its strengths, weaknesses, and areas of improvement:\n\n${pdfData.text}`;
+    const resumeText = pdfData.text;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 1024, temperature: 0.7 },
-    });
-    const content =
-      result.response?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "No feedback generated.";
+    // 4. Construct Prompt
+    const prompt = `
+    You are an expert Technical Recruiter and Resume Coach. 
+    Analyze the resume text provided below.
+    
+    Return ONLY a raw JSON object with this exact schema:
+    {
+      "score": number (0-100),
+      "atsCompatible": boolean,
+      "content": string (A short, 3-4 sentence summary of the candidate's profile),
+      "strengths": string[] (Top 3-4 strong points),
+      "weaknesses": string[] (Top 3-4 areas for improvement),
+      "keywords": string[] (Key tech stack or skills found)
+    }
 
-    // MODIFIED: Fetch user details
-    const { username, user_img } = await getUserDetails(userId);
-
-    // MODIFIED: Insert new user details into DB
-    await sql`
-      INSERT INTO creations (user_id, prompt, content, type, username, user_img)
-      VALUES (${userId}, 'Review Resume', ${content}, 'resume', ${username}, ${user_img})
+    Resume Text:
+    "${resumeText}"
     `;
 
-    res.json({ success: true, content });
+    // 5. Generate with Gemini (Using 1.5-Flash for speed and JSON adherence)
+    const model = genAI.getGenerativeModel({ 
+        model: "gemini-2.5-flash",
+        generationConfig: { responseMimeType: "application/json" }
+    });
+
+    const result = await model.generateContent(prompt);
+    const rawResponse = result.response.text();
+
+    // 6. Safe Parse
+    let parsedData;
+    try {
+        parsedData = JSON.parse(rawResponse);
+    } catch (err) {
+        console.error("AI JSON Parse Failed:", rawResponse);
+        return res.status(500).json({ success: false, message: "Failed to parse AI response" });
+    }
+
+    // 7. DB Storage (Uncomment and adjust to your specific DB setup)
+    /*
+    const { username, user_img } = await getUserDetails(userId);
+    await sql`
+       INSERT INTO creations (user_id, prompt, content, type, username, user_img)
+       VALUES (${userId}, 'Review Resume', ${JSON.stringify(parsedData)}, 'resume', ${username}, ${user_img})
+    `;
+    */
+
+    // 8. Cleanup & Response
+    fs.unlinkSync(resume.path); // Delete temp file from server
+    
+    return res.status(200).json({
+      success: true,
+      ...parsedData
+    });
+
   } catch (e) {
     console.error("❌ Error in resumeReview:", e);
-    res.status(500).json({ success: false, message: e.message });
+    if (req.file) fs.unlinkSync(req.file.path); // Cleanup on error
+    return res.status(500).json({ success: false, message: e.message });
   }
 };
 
@@ -432,7 +464,7 @@ export const editPrompt = async (req, res) => {
         title = ${heading},
         prompt = ${prompt},
         content = ${prompt},
-        tags = ${sql.array(tags, "text")},
+        tags = ${tags},
         is_public = ${isPublic},
         updated_at = now()
       WHERE id = ${id}
@@ -452,29 +484,105 @@ export const editPrompt = async (req, res) => {
   }
 };
 
+// Enhance prompt by making it more detailed using Gemini
+const TEXT_ENHANCEMENT_PROMPT = `You are an Expert AI Prompt Engineer and LLM Optimization Specialist. Your goal is to rewrite the user's raw request into a professional, structured prompt using the CO-STAR framework.
+
+# INSTRUCTIONS:
+1. Analyze the user's intent (Code, Writing, or Analysis).
+2. Rewrite the prompt to be verbose, detailed, and structured.
+dont write any thing extra , just give me the final enahcned prompt and these are some of the points u have to write about 
+
+   - **Context:** User background or scenario.
+   - **Objective:** The precise task to be done.
+   - **Style:** (e.g., Professional, PEP8 Python, Academic).
+   - **Tone:** (e.g., Formal, Enthusiastic, Neutral).
+   - **Audience:** Who is the output for?
+   - **Response:** The required format (text).
+
+  
+`;
+
+const IMAGE_ENHANCEMENT_PROMPT = `You are an Expert AI Art Director and Visual Prompt Engineer. Your goal is to rewrite the user's concept into a highly detailed visual description optimized for image generation models (Stable Diffusion, Midjourney, DALL-E).
+
+# INSTRUCTIONS:
+1. Keep the main subject clear.
+2. Add specific visual details:
+   - **Medium:** (e.g., 3D Render, Oil Painting, Polaroid Photo).
+   - **Lighting:** (e.g., Cinematic, Volumetric, Golden Hour, Neon).
+   - **Camera:** (e.g., Wide angle, Macro, Bokeh, Drone shot).
+   - **Style:** (e.g., Cyberpunk, Minimalist, Renaissance, Vaporwave).
+   - **Quality:** (e.g., 8k, Hyper-realistic, Unreal Engine 5).
+3. just give me the final prompt , other text is not required.
+
+`;
+export const enhancePrompt = async (req, res) => {
+  try {
+    const { userId } = await req.auth();
+    const { prompt,type } = req.body;
+    if (!prompt) {
+      return res.status(400).json({ success: false, message: "Prompt is required" });
+    }
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    let  result;
+    if(type==="image"){
+      result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text:IMAGE_ENHANCEMENT_PROMPT+prompt }] }],
+        generationConfig: { temperature: 0.7 },
+      });
+    }else{
+      result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text:TEXT_ENHANCEMENT_PROMPT+prompt }] }],
+        generationConfig: { temperature: 0.7 },
+      });
+    }
+
+    // await model.generateContent({
+    //   contents: [{ role: "user", parts: [{ text: `Improve and elaborate the following prompt for AI generation, making it more detailed and descriptive while preserving the core idea.\nPrompt: ${prompt}` }] }],
+    //   generationConfig: { temperature: 0.7 },
+    // });
+    const enhanced = result.response.text();
+    res.json({ success: true, enhanced });
+  } catch (e) {
+    console.error("❌ Error in enhancePrompt:", e);
+    res.status(500).json({ success: false, message: "Failed to enhance prompt" });
+  }
+};
+
 
 export const addComment = async (req, res) => {
   try {
     const { userId } = await req.auth();
-    const { id } = req.params; // id of the post/item
-    const { text } = req.body; // new comment content
+    const { promptId, text } = req.body;
+
+    if (!promptId || !text) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "promptId and text are required" 
+      });
+    }
+
+    // Get user details for the comment
+    const { username, user_img } = await getUserDetails(userId);
 
     // Add comment to the array in the "comments" column
     const result = await sql`
-      UPDATE posts
+      UPDATE creations
       SET comments = array_append(comments, ${JSON.stringify({
         userId,
+        username,
+        author: username,
         text,
+        user_img,
         created_at: new Date(),
       })})
-      WHERE id = ${id}
+      WHERE id = ${promptId}
       RETURNING *;
     `;
 
     if (!result[0]) {
       return res
         .status(404)
-        .json({ success: false, message: "Post not found" });
+        .json({ success: false, message: "Creation not found" });
     }
 
     res.json({
@@ -488,24 +596,24 @@ export const addComment = async (req, res) => {
   }
 };
 
-// Get all comments for a post
+// Get all comments for a creation
 export const getComments = async (req, res) => {
   try {
     const { id } = req.params; 
 
     const result = await sql`
       SELECT comments
-      FROM posts
+      FROM creations
       WHERE id = ${id};
     `;
 
     if (!result[0]) {
       return res
         .status(404)
-        .json({ success: false, message: "Post not found" });
+        .json({ success: false, message: "Creation not found" });
     }
 
-    res.json({ success: true, comments: result[0].comments });
+    res.json({ success: true, comments: result[0].comments || [] });
   } catch (e) {
     console.error("❌ Error in getComments:", e);
     res.status(500).json({ success: false, message: "Server error" });

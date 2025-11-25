@@ -1,7 +1,7 @@
 import express from "express";
 import {
-  generateArticle,
-  generateBlogTitle,
+  // generateArticle,
+  // generateBlogTitle,
   generateImage,
   generateImageBackGround,
   generateImageObject,
@@ -15,14 +15,15 @@ import {
   createPrompt,
   
   addComment,
-  getComments
+  getComments,
+  enhancePrompt
 } from "../controllers/aiController.js";
 import { auth } from "../middleware/auth.js";
 import upload from "../config/multer.js";
 const aiRouter = express.Router();
 
-aiRouter.post("/generate-article", auth, generateArticle);
-aiRouter.post("/generate-blog-title", auth, generateBlogTitle);
+// aiRouter.post("/generate-article", auth, generateArticle);
+// aiRouter.post("/generate-blog-title", auth, generateBlogTitle);
 aiRouter.post("/generate-image", auth, generateImage);
 
 aiRouter.post(
@@ -53,6 +54,30 @@ aiRouter.post("/like-prompt", likePrompt);
 aiRouter.put("/edit-prompt/:id",auth,editPrompt);
 
 
-aiRouter.get("/get-comments/:id",auth, getComments);
-aiRouter.post("/add-Comment",auth ,addComment);
+
+aiRouter.post(
+  "/generate-image-object",
+  auth,
+  upload.single("image"),
+  generateImageObject
+);
+
+aiRouter.post(
+  "/generate-resume-review",
+  upload.single("resume"),
+  auth,
+  resumeReview
+);
+aiRouter.post("/create-prompt", createPrompt);
+aiRouter.delete("/delete-prompt/:id", deletePrompt);
+aiRouter.post("/like-prompt", likePrompt);
+
+
+
+aiRouter.put("/edit-prompt/:id",auth,editPrompt);
+
+
+aiRouter.get("/get-comments/:id", auth, getComments);
+aiRouter.post("/add-comment", auth, addComment);
+aiRouter.post("/enhance-prompt", auth, enhancePrompt);
 export default aiRouter;

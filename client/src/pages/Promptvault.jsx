@@ -1,374 +1,463 @@
 import { useState, useEffect } from "react";
 import {
-  MessageSquareText,
-  Save,
-  ThumbsUp,
-  Pencil,
-  Trash2,
+   Zap,
+   Save,
+   Copy,
+   Trash2,
+   Edit,
+   Check,
+   X,
+   Clock,
+   Filter,
+   Grid,
+   Tag as TagIcon,
+   Sparkles,
+   Stars,
+   RefreshCw,
+   Plus,
+   Eye
 } from "lucide-react";
 import axios from "axios";
-import { useAuth } from "@clerk/clerk-react";
+import { useAuth, useUser } from "@clerk/clerk-react";
 import { toast } from "react-hot-toast";
 
 axios.defaults.baseURL = import.meta.env.VITE_BASE_URL;
 
 function PromptVault() {
-  const tags = [
-    "Algorithms",
-    "Data Structures",
-    "Web Development",
-    "Mobile Development",
-    "Machine Learning",
-    "Artificial Intelligence",
-    "Cybersecurity",
-    "Cloud Computing",
-    "Database Management",
-    "Operating Systems",
-    "Computer Networks",
-    "Software Engineering",
-    "Data Science",
-    "Competitive Programming",
-    "DevOps",
-    "Backend",
-    "Frontend",
-    "Full Stack",
-    "Game Development",
-    "Embedded Systems",
-    "UI/UX Design",
-    "Blockchain",
-    "IoT",
-    "Robotics",
-    "UX",
-    "UI",
-    "Other",
-  ];
+   const availableTags = [
+      "Coding",
+      "Image Generation",
+      "Image Editing",
+      "Image Enhancement",
+      "Image Optimization",      
+      "Web Development",
+      "Debugging",
+      "Data Science",
+      "Machine Learning",
+      "Creative Writing",
+      "Copywriting",
+      "SEO",
+      "Social Media",
+      "Marketing",
+      "Email Drafting",
+      "Business Strategy",
+      "Productivity",
+      "Summarization",
+      "Other"
+   ];
 
-  const [isPublic, setIsPublic] = useState(false);
-  const [selectedTags, setSelectedTags] = useState([]);
-  const [heading, setHeading] = useState("");
-  const [promptContent, setPromptContent] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [showAllTags, setShowAllTags] = useState(false);
-  const [prompts, setPrompts] = useState([]);
-  const [editingPrompt, setEditingPrompt] = useState(null);
+   const [isPublic, setIsPublic] = useState(false);
+   const [selectedTags, setSelectedTags] = useState([]);
+   const [title, setTitle] = useState("");
+   const [content, setContent] = useState("");
+   const [loading, setLoading] = useState(false);
+   const [prompts, setPrompts] = useState([]);
+   const [editingPrompt, setEditingPrompt] = useState(null);
+   const [isEnhancing, setIsEnhancing] = useState(false);
 
-  const { getToken, userId } = useAuth();
+   const { getToken } = useAuth();
+   const { user } = useUser();
 
-  const handleTagClick = (tagToToggle) => {
-    setSelectedTags((prev) =>
-      prev.includes(tagToToggle)
-        ? prev.filter((tag) => tag !== tagToToggle)
-        : [...prev, tagToToggle]
-    );
-  };
-
-  const handleSavePrompt = async (e) => {
-    e.preventDefault();
-    if (!promptContent || !heading || selectedTags.length === 0) {
-      toast.error("Please fill heading, prompt, and select at least one tag.");
-      return;
-    }
-    setLoading(true);
-    try {
-      const token = await getToken();
-      let url = "/api/ai/create-prompt";
-      let method = "post";
-      let payload = {
-        heading,
-        prompt: promptContent,
-        tags: selectedTags,
-        isPublic,
-        type: "prompt",
-      };
-
-      if (editingPrompt) {
-        url = `/api/ai/edit-prompt/${editingPrompt.id}`; // ✅ matches backend route
-        method = "put";
+   const handleAddTag = (tag) => {
+      if (!selectedTags.includes(tag)) {
+         setSelectedTags([...selectedTags, tag]);
       }
+   };
 
-      const { data } = await axios({
-        url,
-        method,
-        data: payload,
-        headers: { Authorization: `Bearer ${token}` },
-      });
+   const removeTag = (tagToRemove) => {
+      setSelectedTags(selectedTags.filter(tag => tag !== tagToRemove));
+   };
 
-      if (data.success) {
-        toast.success(editingPrompt ? "Prompt updated!" : "Prompt saved!");
-        setHeading("");
-        setPromptContent("");
-        setSelectedTags([]);
-        setIsPublic(false);
-        setEditingPrompt(null);
-        getPrompts();
-      } else {
-        toast.error(data.message);
+   const handleEnhance = async () => {
+      if (!content) return;
+      setIsEnhancing(true);
+      try {
+         const token = await getToken();
+         const { data } = await axios.post(
+            "/api/ai/enhance-prompt",
+            { prompt: content,type:"prompt" },
+            { headers: { Authorization: `Bearer ${token}` } }
+         );
+
+         if (data.success) {
+            setContent(data.enhanced);
+            toast.success("Prompt enhanced!");
+         } else {
+            toast.error(data.message || "Failed to enhance prompt");
+         }
+      } catch (error) {
+         console.error("Error enhancing prompt:", error);
+         toast.error(error?.response?.data?.message || "Failed to enhance prompt");
+      } finally {
+         setIsEnhancing(false);
       }
-    } catch (e) {
-      console.error("Error saving prompt:", e);
-      toast.error(e?.response?.data?.message || e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+   };
 
-  const getPrompts = async () => {
-    try {
-      const token = await getToken();
-      const { data } = await axios.get("/api/user/get-user-prompts", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (data.success) {
-        setPrompts(data.creations || []);
+   const handleSave = async (e) => {
+      e.preventDefault();
+      if (!content || !title || selectedTags.length === 0) {
+         toast.error("Please fill title, prompt, and select at least one tag.");
+         return;
       }
-    } catch (e) {
-      console.error("Error fetching prompts:", e);
-    }
-  };
+      setLoading(true);
+      try {
+         const token = await getToken();
+         let url = "/api/ai/create-prompt";
+         let method = "post";
+         let payload = {
+            heading: title,
+            prompt: content,
+            tags: selectedTags,
+            isPublic,
+            type: "prompt",
+         };
 
-  const handleLikes = async (promptId) => {
-    setPrompts((prev) =>
-      prev.map((p) =>
-        p.id === promptId
-          ? {
-              ...p,
-              likes: p.likes.includes(userId)
-                ? p.likes.filter((id) => id !== userId)
-                : [...p.likes, userId],
-            }
-          : p
-      )
-    );
-    try {
-      const token = await getToken();
-      const { data } = await axios.post(
-        `/api/ai/like-prompt`,
-        { promptId },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      if (!data.success) getPrompts();
-    } catch (e) {
-      console.error("Error liking prompt:", e);
+         if (editingPrompt) {
+            url = `/api/ai/edit-prompt/${editingPrompt.id}`;
+            method = "put";
+         }
+
+         const { data } = await axios({
+            url,
+            method,
+            data: payload,
+            headers: { Authorization: `Bearer ${token}` },
+         });
+
+         if (data.success) {
+            toast.success(editingPrompt ? "Prompt updated!" : "Prompt saved!");
+            setTitle("");
+            setContent("");
+            setSelectedTags([]);
+            setIsPublic(false);
+            setEditingPrompt(null);
+            getPrompts();
+         } else {
+            toast.error(data.message);
+         }
+      } catch (e) {
+         console.error("Error saving prompt:", e);
+         toast.error(e?.response?.data?.message || e.message);
+      } finally {
+         setLoading(false);
+      }
+   };
+
+   const getPrompts = async () => {
+      try {
+         const token = await getToken();
+         const { data } = await axios.get("/api/user/get-user-prompts", {
+            headers: { Authorization: `Bearer ${token}` },
+         });
+         if (data.success) {
+            setPrompts(data.creations || []);
+         }
+      } catch (e) {
+         console.error("Error fetching prompts:", e);
+      }
+   };
+
+   const handleDelete = async (promptId) => {
+      try {
+         const token = await getToken();
+         const { data } = await axios.delete(`/api/ai/delete-prompt/${promptId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+         });
+
+         if (data.success) {
+            toast.success("Prompt deleted!");
+            setPrompts((prev) => prev.filter((p) => p.id !== promptId));
+         } else {
+            toast.error(data.message);
+         }
+      } catch (e) {
+         console.error("Error deleting prompt:", e);
+         toast.error(e?.response?.data?.message || e.message);
+      }
+   };
+
+   const handleEdit = (prompt) => {
+      setEditingPrompt(prompt);
+      setTitle(prompt.heading || prompt.title);
+      setContent(prompt.prompt);
+      setSelectedTags(prompt.tags || []);
+      setIsPublic(prompt.is_public || false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+   };
+
+   useEffect(() => {
       getPrompts();
-    }
-  };
+   }, []);
 
-  const handleDelete = async (promptId) => {
-    try {
-      const token = await getToken();
-      const { data } = await axios.delete(`/api/ai/delete-prompt/${promptId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+   return (
+      <div className="animate-in fade-in duration-500 h-[calc(100vh-8rem)] min-h-[700px] flex flex-col lg:flex-row gap-8 p-4 sm:p-6 lg:p-8">
 
-      if (data.success) {
-        toast.success("Prompt deleted!");
-        setPrompts((prev) => prev.filter((p) => p.id !== promptId));
-      } else {
-        toast.error(data.message);
-      }
-    } catch (e) {
-      console.error("Error deleting prompt:", e);
-      toast.error(e?.response?.data?.message || e.message);
-    }
-  };
+         {/* LEFT: Save New Prompt Form */}
+         <div className="w-full lg:w-1/2 flex flex-col">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-3xl flex flex-col h-full shadow-2xl shadow-black/50 overflow-hidden relative">
 
-  const handleEdit = (prompt) => {
-    setEditingPrompt(prompt);
-    setHeading(prompt.title);
-    setPromptContent(prompt.prompt);
-    setSelectedTags(prompt.tags || []);
-    setIsPublic(prompt.is_public || false);
-    window.scrollTo({ top: 0, behavior: "smooth" }); // ✅ scrolls to form
-  };
+               {/* Decorative Top Gradient */}
+               <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500" />
 
-  useEffect(() => {
-    getPrompts();
-  }, []);
+               {/* Header */}
+               <div className="p-8 border-b border-zinc-800/50 flex items-center justify-between bg-zinc-900">
+                  <div className="flex items-center gap-4">
+                     <div className="p-3 bg-gradient-to-br from-orange-500/20 to-pink-500/20 rounded-xl text-orange-400 border border-orange-500/20">
+                        <Zap size={24} />
+                     </div>
+                     <div>
+                        <h2 className="text-2xl font-bold text-white">
+                           {editingPrompt ? "Edit Prompt" : "Save Prompt"}
+                        </h2>
+                        <p className="text-xs text-zinc-500 mt-1">Store your best ideas for later.</p>
+                     </div>
+                  </div>
+                  {editingPrompt && (
+                     <button
+                        onClick={() => {
+                           setEditingPrompt(null);
+                           setTitle("");
+                           setContent("");
+                           setSelectedTags([]);
+                           setIsPublic(false);
+                        }}
+                        className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                     >
+                        <X size={20} />
+                     </button>
+                  )}
+               </div>
 
-  const TAG_LIMIT = 8;
-  const tagsToShow = showAllTags ? tags : tags.slice(0, TAG_LIMIT);
+               {/* Form Content */}
+               <form onSubmit={handleSave} className="p-8 flex-1 flex flex-col gap-8 overflow-y-auto custom-scrollbar">
 
-  return (
-    <div className="h-full p-6 flex flex-col lg:flex-row gap-6 text-slate-700">
-      {/* Form */}
-      <form
-        className="w-full max-w-lg p-4 bg-white rounded-lg border border-gray-200"
-        onSubmit={handleSavePrompt}
-      >
-        <div className="flex items-center gap-3">
-          <MessageSquareText className="w-6 text-red-500" />
-          <h1 className="text-xl font-semibold text-black">
-            {editingPrompt ? "Edit Prompt" : "Save a New Prompt"}
-          </h1>
-        </div>
+                  {/* Title Input */}
+                  <div className="space-y-3">
+                     <label className="text-sm font-semibold text-zinc-300 ml-1">Title</label>
+                     <input
+                        type="text"
+                        placeholder="e.g. Cinematic Portrait Generator"
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-5 py-4 text-base text-white focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 transition-all placeholder:text-zinc-600"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        required
+                     />
+                  </div>
 
-        <p className="mt-6 text-sm font-medium">Heading</p>
-        <input
-          className="w-full p-2 px-3 mt-2 outline-none text-sm rounded-md border border-gray-300"
-          placeholder="e.g., Business Plan Generator"
-          type="text"
-          value={heading}
-          onChange={(e) => setHeading(e.target.value)}
-          required
-        />
+                  {/* Content Input with AI Enhance Button */}
+                  <div className="space-y-3 flex-1 flex flex-col">
+                     <div className="flex items-center justify-between ml-1">
+                        <label className="text-sm font-semibold text-zinc-300">Prompt Content</label>
+                        <button
+                           type="button"
+                           onClick={handleEnhance}
+                           disabled={isEnhancing || !content}
+                           className="text-xs flex items-center gap-1.5 text-purple-400 hover:text-purple-300 transition-colors disabled:opacity-50"
+                        >
+                           {isEnhancing ? <RefreshCw size={12} className="animate-spin" /> : <Stars size={12} />}
+                           {isEnhancing ? 'Improving...' : 'AI Enhance'}
+                        </button>
+                     </div>
+                     <div className="relative flex-1">
+                        <textarea
+                           className={`w-full h-full min-h-[220px] bg-zinc-950 border border-zinc-800 rounded-xl p-5 text-sm text-white font-mono placeholder-zinc-600 focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 transition-all resize-none leading-relaxed ${isEnhancing ? 'opacity-50 blur-[1px]' : ''}`}
+                           placeholder="Write your prompt details here..."
+                           value={content}
+                           onChange={(e) => setContent(e.target.value)}
+                           required
+                        />
+                        {isEnhancing && (
+                           <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="bg-zinc-900/80 backdrop-blur-sm px-4 py-2 rounded-full border border-purple-500/30 flex items-center gap-2 text-purple-200 text-sm shadow-xl">
+                                 <Sparkles size={16} className="text-purple-400 animate-pulse" />
+                                 Adding magic...
+                              </div>
+                           </div>
+                        )}
+                     </div>
+                  </div>
 
-        <p className="mt-4 text-sm font-medium">Prompt Content</p>
-        <textarea
-          className="w-full p-2 px-3 mt-2 outline-none text-sm rounded-md border border-gray-300 h-48"
-          placeholder="Write your prompt here..."
-          value={promptContent}
-          onChange={(e) => setPromptContent(e.target.value)}
-          required
-        />
+                  {/* Tags Section */}
+                  <div className="space-y-4">
+                     <label className="text-sm font-semibold text-zinc-300 ml-1">Tags</label>
 
-        <p className="mt-4 text-sm font-medium">Tags</p>
-        <div className="mt-4 flex gap-2 flex-wrap">
-          {tagsToShow.map((tag) => (
-            <span
-              key={tag}
-              onClick={() => handleTagClick(tag)}
-              className={`text-xs px-4 py-1 rounded-full cursor-pointer border ${
-                selectedTags.includes(tag)
-                  ? "bg-orange-50 text-orange-700 border-orange-300"
-                  : "text-gray-500 border-gray-300"
-              }`}
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
+                     {/* Selected Tags */}
+                     <div className="flex flex-wrap gap-2 min-h-[36px] bg-zinc-950/50 p-3 rounded-xl border border-zinc-800/50">
+                        {selectedTags.length > 0 ? selectedTags.map(tag => (
+                           <span key={tag} className="px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-200 border border-zinc-700 text-xs font-medium flex items-center gap-2 group animate-in zoom-in-95">
+                              {tag}
+                              <button type="button" onClick={() => removeTag(tag)} className="text-zinc-500 hover:text-white"><X size={12} /></button>
+                           </span>
+                        )) : (
+                           <span className="text-zinc-600 text-sm flex items-center gap-2 px-1">
+                              <TagIcon size={14} /> Select tags below...
+                           </span>
+                        )}
+                     </div>
 
-        {tags.length > TAG_LIMIT && (
-          <button
-            type="button"
-            onClick={() => setShowAllTags(!showAllTags)}
-            className="text-sm text-blue-600 hover:underline mt-2 font-medium"
-          >
-            {showAllTags
-              ? "Show Less"
-              : `Show More (${tags.length - TAG_LIMIT})`}
-          </button>
-        )}
+                     {/* Available Tags */}
+                     <div className="flex flex-wrap gap-2">
+                        {availableTags.map(tag => (
+                           <button
+                              key={tag}
+                              type="button"
+                              onClick={() => handleAddTag(tag)}
+                              className={`px-3 py-1.5 rounded-full text-xs transition-all border ${selectedTags.includes(tag)
+                                 ? 'bg-orange-500/10 text-orange-400 border-orange-500/30'
+                                 : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-600 hover:text-white'
+                                 }`}
+                           >
+                              {tag}
+                           </button>
+                        ))}
+                     </div>
+                  </div>
 
-        <p className="mt-6 text-sm font-medium">Visibility</p>
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <div className="relative">
-              <input
-                type="checkbox"
-                checked={isPublic}
-                onChange={() => setIsPublic(!isPublic)}
-                className="sr-only"
-              />
-              <div
-                className={`w-10 h-5 rounded-full transition-colors ${
-                  isPublic ? "bg-green-500" : "bg-gray-300"
-                }`}
-              />
-              <div
-                className={`absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
-                  isPublic ? "translate-x-5" : ""
-                }`}
-              />
+                  {/* Visibility & Actions */}
+                  <div className="mt-auto pt-8 border-t border-zinc-800 flex items-center justify-between gap-6">
+                     <div className="flex items-center gap-3 bg-zinc-950/50 px-4 py-2 rounded-xl border border-zinc-800">
+                        <button
+                           type="button"
+                           onClick={() => setIsPublic(!isPublic)}
+                           className={`w-10 h-6 rounded-full transition-colors relative ${isPublic ? 'bg-emerald-500' : 'bg-zinc-700'}`}
+                        >
+                           <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${isPublic ? 'left-5' : 'left-1'}`} />
+                        </button>
+                        <span className="text-sm font-medium text-zinc-300">{isPublic ? 'Public' : 'Private'}</span>
+                     </div>
+
+                     <button
+                        type="submit"
+                        disabled={loading}
+                        className="flex-1 px-4 py-3 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:shadow-lg hover:shadow-orange-500/20 border border-transparent text-base font-semibold shadow-xl shadow-orange-500/20 hover:scale-[1.02]"
+                     >
+                        {loading ? (
+                           <><RefreshCw size={18} className="animate-spin" /> {editingPrompt ? "Updating..." : "Saving..."}</>
+                        ) : (
+                           <><Save size={18} /> {editingPrompt ? "Update Prompt" : "Save to Vault"}</>
+                        )}
+                     </button>
+                  </div>
+
+               </form>
             </div>
-            <span className="text-sm text-gray-700">
-              Make this prompt Public
-            </span>
-          </label>
-        </div>
+         </div>
 
-        {editingPrompt && (
-          <button
-            type="button"
-            onClick={() => {
-              setEditingPrompt(null);
-              setHeading("");
-              setPromptContent("");
-              setSelectedTags([]);
-              setIsPublic(false);
-            }}
-            className="text-xs text-gray-500 mt-2 hover:underline"
-          >
-            Cancel Editing
-          </button>
-        )}
+         {/* RIGHT: Your Prompts List */}
+         <div className="w-full lg:w-1/2 flex flex-col h-full overflow-hidden">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-3xl flex flex-col h-full shadow-2xl overflow-hidden">
 
-        <button
-          type="submit"
-          disabled={loading}
-          className={`w-full flex justify-center items-center gap-2 px-4 py-2 mt-6 text-sm rounded-lg 
-            ${
-              loading
-                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-gradient-to-r from-[#FF4500] to-[#FF6347] text-white"
-            }`}
-        >
-          {loading ? (
-            editingPrompt ? (
-              "Updating..."
-            ) : (
-              "Saving..."
-            )
-          ) : (
-            <>
-              <Save className="w-5" />
-              {editingPrompt ? "Update Prompt" : "Save Prompt"}
-            </>
-          )}
-        </button>
-      </form>
-
-      {/* Saved Prompts */}
-      <div className="border border-gray-100 p-4 rounded-lg w-full max-w-xl bg-white flex flex-col">
-        <h2 className="text-lg font-semibold text-black mb-3">Your Prompts</h2>
-
-        <div className="flex-1 overflow-y-auto max-h-[70vh] pr-2">
-          {prompts.length === 0 ? (
-            <p className="text-gray-500 text-sm">No prompts saved yet.</p>
-          ) : (
-            prompts.map((prompt) => (
-              <div
-                key={prompt.id}
-                className="border border-gray-200 rounded-lg p-3 mb-3 hover:bg-gray-50 transition"
-              >
-                <span className="block text-lg font-semibold text-black">
-                  {prompt.heading || prompt.title}
-                </span>
-                <span className="block text-sm text-gray-700">
-                  {prompt.prompt}
-                </span>
-
-                <div className="mt-3 flex items-center justify-between">
-                  <div
-                    className="flex items-center gap-1 text-xs text-gray-600 cursor-pointer"
-                    onClick={() => handleLikes(prompt.id)}
-                  >
-                    <ThumbsUp className="w-4 h-4" />
-                    {prompt.likes?.length || 0} Likes
+               <div className="p-8 border-b border-zinc-800 flex justify-between items-end bg-zinc-900">
+                  <div>
+                     <h2 className="text-2xl font-bold text-white mb-1">Your Vault</h2>
+                     <p className="text-zinc-500 text-xs">{prompts.length} prompts saved</p>
                   </div>
 
-                  <div className="flex items-center gap-3 text-xs">
-                    <button
-                      onClick={() => handleEdit(prompt)}
-                      className="flex items-center gap-1 text-blue-600 hover:underline"
-                    >
-                      <Pencil className="w-4 h-4" /> Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(prompt.id)}
-                      className="flex items-center gap-1 text-red-600 hover:underline"
-                    >
-                      <Trash2 className="w-4 h-4" /> Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+                  {/* <div className="flex gap-2">
+                 <button className="p-2 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white transition-colors"><Filter size={18} /></button>
+                 <button className="p-2 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white transition-colors"><Grid size={18} /></button>
+              </div> */}
+               </div>
+
+               <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4 bg-black/20">
+                  {prompts.length === 0 ? (
+                     <div className="h-full flex flex-col items-center justify-center text-zinc-500 gap-6">
+                        <div className="relative">
+                           <div className="w-24 h-24 bg-zinc-900 rounded-full flex items-center justify-center border-2 border-dashed border-zinc-800">
+                              <Zap size={40} className="opacity-20" />
+                           </div>
+                           <div className="absolute -bottom-2 -right-2 bg-zinc-800 p-2 rounded-full border border-zinc-700">
+                              <Plus size={16} className="text-zinc-400" />
+                           </div>
+                        </div>
+                        <div className="text-center">
+                           <p className="text-lg font-medium text-zinc-300">Your vault is empty</p>
+                           <p className="text-sm mt-1">Create your first prompt to get started.</p>
+                        </div>
+                     </div>
+                  ) : (
+                     prompts.map((item) => (
+                        <VaultListItem key={item.id} item={item} onDelete={handleDelete} onEdit={handleEdit} />
+                     ))
+                  )}
+               </div>
+            </div>
+         </div>
+
       </div>
-    </div>
-  );
+   );
 }
+
+// Vault List Item Component
+const VaultListItem = ({ item, onDelete, onEdit }) => {
+   const [copied, setCopied] = useState(false);
+
+   const handleCopy = () => {
+      navigator.clipboard.writeText(item.prompt);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+   };
+
+   return (
+      <div className="group relative bg-zinc-950/50 border border-zinc-800 rounded-2xl p-6 hover:border-orange-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-orange-500/5 animate-in fade-in slide-in-from-bottom-2">
+         {/* Glass gradient overlay on hover */}
+         <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl pointer-events-none" />
+
+         <div className="relative z-10">
+            <div className="flex items-start justify-between gap-4 mb-4">
+               <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-white text-lg group-hover:text-orange-100 transition-colors truncate">
+                     {item.heading || item.title}
+                  </h4>
+                  <span className="text-xs text-zinc-500 font-medium flex items-center gap-1.5 mt-1">
+                     <Clock size={12} /> {new Date(item.created_at).toLocaleDateString()}
+                  </span>
+               </div>
+               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                     onClick={() => onEdit(item)}
+                     className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                     title="Edit"
+                  >
+                     <Edit size={16} />
+                  </button>
+                  <button
+                     onClick={() => onDelete(item.id)}
+                     className="p-2 rounded-lg text-zinc-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                     title="Delete"
+                  >
+                     <Trash2 size={16} />
+                  </button>
+               </div>
+            </div>
+
+            <div className="relative group/text">
+               <p className="text-sm text-zinc-400 leading-relaxed mb-5 line-clamp-3 font-mono bg-zinc-900/50 p-4 rounded-xl border border-zinc-800/50 group-hover/text:border-zinc-700 transition-colors break-words overflow-wrap-anywhere">
+                  {item.prompt}
+               </p>
+            </div>
+
+            <div className="flex items-center justify-between">
+               <div className="flex flex-wrap gap-2">
+                  {item.tags && item.tags.slice(0, 3).map((tag, i) => (
+                     <span key={i} className="text-[10px] px-2.5 py-1 rounded-full bg-zinc-800/80 text-zinc-400 border border-zinc-700/50 group-hover:border-zinc-600 transition-colors">{tag}</span>
+                  ))}
+               </div>
+
+               <button
+                  onClick={handleCopy}
+                  className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-all ${copied
+                     ? 'bg-emerald-500/10 text-emerald-400'
+                     : 'text-zinc-500 hover:text-white hover:bg-zinc-800'
+                     }`}
+               >
+                  {copied ? <Check size={14} /> : <Copy size={14} />}
+                  {copied ? 'Copied!' : 'Copy'}
+               </button>
+            </div>
+         </div>
+      </div>
+   );
+};
 
 export default PromptVault;
